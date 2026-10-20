@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fidelity1 Scanning Colorimeter — VerusVia</title>
+<style>
+:root{
+  --navy:#16202f; --navy-2:#1e2b3d; --cream:#faf8f3; --paper:#fff;
+  --amber:#d98b4a; --ink:#1c2534; --body:#4a5464; --muted:#8a8f99;
+  --rule:#ddd9d0; --ok:#2e7d55; --bad:#a8433a; --warn:#96701f;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--cream);color:var(--body);
+  font:14px/1.6 system-ui,-apple-system,"Segoe UI",sans-serif}
+.wrap{max-width:1080px;margin:0 auto;padding:0 20px 48px}
+header{background:var(--navy);color:#fff;padding:18px 0;margin-bottom:22px}
+.hdr{max-width:1080px;margin:0 auto;padding:0 20px;display:flex;
+  justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap}
+h1{font-size:18px;font-weight:600;margin:0}
+.sub{font-family:var(--mono);font-size:10px;letter-spacing:.16em;
+  text-transform:uppercase;color:#a9b4c4;margin-top:3px}
+.conn{display:flex;align-items:center;gap:9px;font-family:var(--mono);font-size:11px}
+.dot{width:8px;height:8px;border-radius:50%;background:#6b7280}
+.dot.on{background:#4ade80}.dot.off{background:#f87171}
+.grid{display:grid;grid-template-columns:300px 1fr;gap:20px;align-items:start}
+@media(max-width:820px){.grid{grid-template-columns:1fr}}
+.card{background:var(--paper);border:1px solid var(--rule);padding:16px 18px;margin-bottom:16px}
+.card h2{font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--ink);margin:0 0 14px;padding-bottom:9px;border-bottom:1px solid var(--rule)}
+.field{margin-bottom:15px}.field:last-child{margin-bottom:0}
+label{display:block;font-size:11px;letter-spacing:.055em;text-transform:uppercase;
+  color:var(--muted);margin-bottom:5px}
+.val{font-family:var(--mono);font-size:13px;color:var(--amber);float:right;
+  text-transform:none;letter-spacing:0}
+select,input[type=text]{width:100%;padding:7px 9px;border:1px solid var(--rule);
+  background:var(--paper);color:var(--ink);font:13px var(--mono);border-radius:2px}
+input[type=range]{width:100%;accent-color:var(--amber);margin:2px 0}
+.hint{font-size:11px;color:var(--muted);margin-top:4px;line-height:1.45}
+button{font:600 13px system-ui,sans-serif;padding:9px 16px;border:1px solid var(--navy);
+  background:var(--navy);color:#fff;border-radius:2px;cursor:pointer}
+button:hover:not(:disabled){background:var(--navy-2)}
+button:disabled{opacity:.42;cursor:not-allowed}
+button.ghost{background:transparent;color:var(--ink);border-color:var(--rule)}
+button.ghost:hover:not(:disabled){background:#f0ede6}
+button.go{background:var(--amber);border-color:var(--amber);width:100%;padding:12px}
+button.go:hover:not(:disabled){background:#c97b3c}
+.row{display:flex;gap:8px}.row>*{flex:1}
+.status{font-family:var(--mono);font-size:11.5px;padding:9px 11px;background:#f4f1ea;
+  border-left:2px solid var(--muted);margin-top:13px;word-break:break-word;white-space:pre-wrap}
+.status.ok{border-left-color:var(--ok);color:var(--ok)}
+.status.bad{border-left-color:var(--bad);color:var(--bad)}
+.status.warn{border-left-color:var(--warn);color:var(--warn)}
+.status.busy{border-left-color:var(--amber);color:var(--amber)}
+.bar{height:4px;background:#e6e2d9;margin-top:10px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--amber);width:0;transition:width .18s}
+.refs{font-family:var(--mono);font-size:11.5px;margin-bottom:12px}
+.refrow{display:flex;justify-content:space-between;gap:8px;padding:5px 0;
+  border-bottom:1px solid var(--rule)}
+.refrow:last-child{border:0}
+.pill{font-size:10px;padding:1px 7px;border-radius:9px;white-space:nowrap}
+.pill.none{background:#f0ede6;color:var(--muted)}
+.pill.good{background:#e4f0ea;color:var(--ok)}
+.pill.stale{background:#f6efdc;color:var(--warn)}
+table{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:11.5px}
+th,td{text-align:right;padding:3px 7px;border-bottom:1px solid var(--rule);white-space:nowrap}
+th{color:var(--muted);font-weight:400;font-size:10px;letter-spacing:.05em;
+  text-transform:uppercase}
+th:first-child,td:first-child{text-align:left}
+tr.bim td{color:var(--muted)}
+.scroll{max-height:300px;overflow:auto}
+.swatch{display:inline-block;width:11px;height:11px;border:1px solid rgba(0,0,0,.18);
+  vertical-align:-1px;margin-right:6px}
+.empty{color:var(--muted);font-size:12.5px;padding:22px 0;text-align:center}
+.files{font-family:var(--mono);font-size:11.5px;max-height:150px;overflow:auto}
+.files div{padding:2px 0;border-bottom:1px solid var(--rule)}
+.files div:last-child{border:0}
+.caveat{font-size:11.5px;color:var(--muted);margin-top:9px;line-height:1.5}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="hdr">
+    <div>
+      <h1>Fidelity1 — Scanning Colorimeter</h1>
+      <div class="sub">VerusVia · VS-SPEC-001 · software beta 2</div>
+    </div>
+    <div class="conn"><span class="dot off" id="dot"></span><span id="connTxt">disconnected</span></div>
+  </div>
+</header>
+
+<div class="wrap">
+<div class="grid">
+
+  <div>
+    <div class="card">
+      <h2>Instrument</h2>
+      <div class="field">
+        <label>Serial port</label>
+        <select id="port"></select>
+        <div class="row" style="margin-top:8px">
+          <button class="ghost" id="refresh">Refresh</button>
+          <button id="connect">Connect</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Settings</h2>
+      <div class="field">
+        <label>LED brightness <span class="val" id="brightVal">160</span></label>
+        <input type="range" id="bright" min="0" max="255" value="160">
+      </div>
+      <div class="field">
+        <label>Integration time</label>
+        <select id="integ">
+          <option value="100">100 ms</option><option value="200">200 ms</option>
+          <option value="300">300 ms</option><option value="400">400 ms</option>
+          <option value="500">500 ms</option><option value="600">600 ms</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Detector gain</label>
+        <select id="gain">
+          <option value="LOW">LOW — 1×</option><option value="MED">MED — 25×</option>
+          <option value="HIGH">HIGH — 428×</option><option value="MAX">MAX — 9876×</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>LED settle delay <span class="val" id="settleVal">20 ms</span></label>
+        <input type="range" id="settle" min="0" max="200" step="5" value="20">
+      </div>
+      <div class="hint">Changing any of these invalidates stored references —
+        they are only comparable at the settings they were taken at.</div>
+      <div class="status" id="setStatus" style="display:none"></div>
+    </div>
+
+    <div class="card">
+      <h2>Saved files</h2>
+      <div class="files" id="files"><div class="empty" style="padding:8px 0">none yet</div></div>
+      <div class="hint" id="dir" style="margin-top:9px"></div>
+    </div>
+  </div>
+
+  <div>
+    <div class="card">
+      <h2>References</h2>
+      <div class="refs" id="refs"></div>
+      <div class="row">
+        <button class="ghost" id="scanDark" disabled>Dark scan</button>
+        <button class="ghost" id="scanBlank" disabled>Blank scan</button>
+      </div>
+      <div class="hint" style="margin-top:8px">Dark: LED off, lid closed — detector offset
+        plus stray light. Blank: solvent-only cuvette. Both are kept until you rescan them.</div>
+    </div>
+
+    <div class="card">
+      <h2>Sample</h2>
+      <div class="field">
+        <label>Sample note <span class="val" style="color:var(--muted)">optional</span></label>
+        <input type="text" id="note" placeholder="e.g. 10 µM Brilliant Blue FCF">
+      </div>
+      <button class="go" id="scanSample" disabled>Scan sample</button>
+      <div class="bar"><i id="bar"></i></div>
+      <div class="status" id="status">Connect the instrument to begin.</div>
+    </div>
+
+    <div class="card">
+      <h2>Absorbance</h2>
+      <div id="chart"><div class="empty">No sample scan yet.</div></div>
+    </div>
+
+    <div class="card">
+      <h2>Data</h2>
+      <div class="scroll" id="tableWrap"><div class="empty">No sample scan yet.</div></div>
+    </div>
+  </div>
+
+</div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+let connected = false, polling = null, refs = {dark:null, blank:null};
+
+const OFFLINE = location.protocol === 'file:';
+
+const api = async (path, body) => {
+  if (OFFLINE) throw new Error(
+    'This page was opened directly from disk (file://). Run Fidelity1.bat, ' +
+    'or start the server with "python spectro_server.py".');
+  const opt = body === undefined ? {} :
+    {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body)};
+  let r;
+  try { r = await fetch(path, opt); }
+  catch (e) { throw new Error('Cannot reach the server. Is it still running?'); }
+  const j = await r.json().catch(() => ({error:'bad response from server'}));
+  if (!r.ok || j.error) throw new Error(j.error || ('HTTP ' + r.status));
+  return j;
+};
+
+const setStatus = (el, msg, cls) => {
+  el.textContent = msg;
+  el.className = 'status' + (cls ? ' ' + cls : '');
+  el.style.display = 'block';
+};
+
+function renderRefs(r) {
+  refs = r || {dark:null, blank:null};
+  const one = (kind, label) => {
+    const v = refs[kind];
+    if (!v) return `<div class="refrow"><span>${label}</span>
+      <span class="pill none">not taken</span></div>`;
+    const when = v.timestamp.replace('T', ' ');
+    const cls = v.matches ? 'good' : 'stale';
+    const txt = v.matches ? 'current' : 'settings changed';
+    return `<div class="refrow"><span>${label} &nbsp;<span style="color:var(--muted)">${when}</span></span>
+      <span class="pill ${cls}">${txt}</span></div>`;
+  };
+  $('refs').innerHTML = one('dark','Dark') + one('blank','Blank');
+  const ready = connected && refs.dark && refs.blank;
+  $('scanSample').disabled = !ready;
+}
+
+function applyState(s) {
+  connected = s.connected;
+  $('dot').className = 'dot ' + (connected ? 'on' : 'off');
+  $('connTxt').textContent = connected ? s.port : 'disconnected';
+  $('connect').textContent = connected ? 'Disconnect' : 'Connect';
+  $('dir').textContent = 'Written to ' + s.directory;
+
+  const usable = connected && s.sensor_ok !== false;
+  $('scanDark').disabled = !usable;
+  $('scanBlank').disabled = !usable;
+
+  const st = s.settings || {};
+  if (st.brightness != null) { $('bright').value = st.brightness; $('brightVal').textContent = st.brightness; }
+  if (st.integration_ms) $('integ').value = String(st.integration_ms);
+  if (st.gain && st.gain !== 'NONE') $('gain').value = st.gain;
+  if (st.settle_ms != null) { $('settle').value = st.settle_ms; $('settleVal').textContent = st.settle_ms + ' ms'; }
+
+  renderRefs(s.references);
+
+  if (connected && s.sensor_ok === false) {
+    setStatus($('status'),
+      'Connected, but the TSL2591 is not responding on I\u00b2C. ' + (s.sensor_error || ''), 'bad');
+    $('scanSample').disabled = true;
+  }
+}
+
+$('bright').oninput = e => $('brightVal').textContent = e.target.value;
+$('settle').oninput = e => $('settleVal').textContent = e.target.value + ' ms';
+
+async function pushSettings(label) {
+  if (!connected) return;
+  try {
+    applyState(await api('/api/settings', {
+      brightness: +$('bright').value, integration_ms: +$('integ').value,
+      gain: $('gain').value, settle_ms: +$('settle').value}));
+    setStatus($('setStatus'), (label || 'Applied') + '.', 'ok');
+  } catch (e) { setStatus($('setStatus'), e.message, 'bad'); }
+}
+$('bright').onchange = () => pushSettings('Brightness ' + $('bright').value);
+$('settle').onchange = () => pushSettings('Settle ' + $('settle').value + ' ms');
+$('integ').onchange  = () => pushSettings('Integration ' + $('integ').value + ' ms');
+$('gain').onchange   = () => pushSettings('Gain ' + $('gain').value);
+
+async function loadPorts() {
+  try {
+    const {ports} = await api('/api/ports');
+    const sel = $('port'), prev = sel.value;
+    sel.innerHTML = ports.length
+      ? ports.map(p => `<option value="${p.device}">${p.device} — ${p.description}</option>`).join('')
+      : '<option value="">no serial ports found</option>';
+    if (prev) sel.value = prev;
+  } catch (e) { setStatus($('status'), e.message, 'bad'); }
+}
+$('refresh').onclick = loadPorts;
+
+$('connect').onclick = async () => {
+  $('connect').disabled = true;
+  try {
+    if (connected) {
+      applyState(await api('/api/disconnect', {}));
+      setStatus($('status'), 'Disconnected.');
+    } else {
+      const port = $('port').value;
+      if (!port) throw new Error('choose a serial port first');
+      setStatus($('status'), 'Connecting\u2026', 'busy');
+      applyState(await api('/api/connect', {port}));
+      setStatus($('status'), 'Connected. Ready.', 'ok');
+      loadScans();
+    }
+  } catch (e) { setStatus($('status'), e.message, 'bad'); }
+  $('connect').disabled = false;
+};
+
+function busy(on) {
+  ['scanDark','scanBlank','scanSample'].forEach(id => $(id).disabled = on);
+  if (!on) api('/api/state').then(applyState).catch(()=>{});
+}
+
+async function startScan(kind) {
+  busy(true);
+  $('bar').style.width = '0%';
+  try {
+    await api('/api/scan', {kind, note: $('note').value});
+    setStatus($('status'), kind + ' scan running\u2026', 'busy');
+    polling = setInterval(pollScan, 250);
+  } catch (e) { setStatus($('status'), e.message, 'bad'); busy(false); }
+}
+$('scanDark').onclick   = () => startScan('dark');
+$('scanBlank').onclick  = () => startScan('blank');
+$('scanSample').onclick = () => startScan('sample');
+
+async function pollScan() {
+  let p;
+  try { p = await api('/api/scan/progress'); }
+  catch (e) { clearInterval(polling); setStatus($('status'), e.message, 'bad'); busy(false); return; }
+
+  if (p.total) $('bar').style.width = Math.round(100 * p.step / p.total) + '%';
+  if (p.running) {
+    setStatus($('status'), `${p.kind} scan \u2014 step ${p.step} of ${p.total}\u2026`, 'busy');
+    return;
+  }
+
+  clearInterval(polling);
+  busy(false);
+  renderRefs(p.references);
+
+  if (p.error) { setStatus($('status'), p.error, 'bad'); return; }
+  if (!p.filename) return;
+
+  $('bar').style.width = '100%';
+  if (p.kind === 'sample') {
+    const bad = p.rows.filter(r => r.flag).length;
+    let msg = `Saved ${p.filename} \u2014 ${p.rows.length} steps.`;
+    if (p.warning) msg += '\nWARNING: ' + p.warning + ' \u2014 retake the reference.';
+    if (bad) msg += `\n${bad} step(s) flagged; see the flag column.`;
+    setStatus($('status'), msg, (p.warning || bad) ? 'warn' : 'ok');
+    render(p.rows);
+  } else {
+    setStatus($('status'), `Saved ${p.filename} \u2014 ${p.kind} reference stored.`, 'ok');
+  }
+  loadScans();
+}
+
+async function loadScans() {
+  try {
+    const {scans} = await api('/api/scans');
+    $('files').innerHTML = scans.length
+      ? scans.map(f => `<div>${f}</div>`).join('')
+      : '<div class="empty" style="padding:8px 0">none yet</div>';
+  } catch (e) {}
+}
+
+function render(rows) {
+  if (!rows.length) return;
+
+  const valid = rows.filter(r => r.absorbance !== null);
+  if (!valid.length) {
+    $('chart').innerHTML = '<div class="empty">No valid absorbance values \u2014 check the flag column.</div>';
+  } else {
+    const W = 620, H = 260, L = 64, R = 24, T = 20, B = 52;
+    const amax = Math.max(...valid.map(r => r.absorbance), 0.1) * 1.12;
+    const amin = Math.min(...valid.map(r => r.absorbance), 0);
+    const Y = v => T + (H-T-B) * (1 - (v - amin) / Math.max(1e-9, amax - amin));
+    const slot = (W - L - R) / rows.length;
+    const bw = Math.min(88, slot * 0.54);
+
+    const grid = [0,.25,.5,.75,1].map(f => {
+      const v = amin + (amax-amin)*f, y = Y(v);
+      return `<line x1="${L}" y1="${y.toFixed(1)}" x2="${W-R}" y2="${y.toFixed(1)}" stroke="#e6e2d9"/>
+        <text x="${L-10}" y="${(y+3.5).toFixed(1)}" text-anchor="end" font-size="10" fill="#8a8f99"
+        font-family="ui-monospace,monospace">${v.toFixed(2)}</text>`;
+    }).join('');
+
+    const zero = Y(Math.max(0, amin));
+    const bars = rows.map((r, i) => {
+      const cx = L + slot * (i + 0.5);
+      if (r.absorbance === null) {
+        return `<text x="${cx.toFixed(1)}" y="${zero - 8}" text-anchor="middle" font-size="10"
+          fill="#a8433a" font-family="ui-monospace,monospace">no value</text>`;
+      }
+      const y = Y(r.absorbance);
+      const top = Math.min(y, zero), h = Math.abs(zero - y);
+      return `<rect x="${(cx - bw/2).toFixed(1)}" y="${top.toFixed(1)}" width="${bw.toFixed(1)}"
+        height="${Math.max(1, h).toFixed(1)}" fill="rgb(${r.r},${r.g},${r.b})"
+        stroke="rgba(0,0,0,.28)" stroke-width="1"/>
+        <text x="${cx.toFixed(1)}" y="${(top - 7).toFixed(1)}" text-anchor="middle" font-size="13"
+        font-weight="600" fill="#1c2534" font-family="ui-monospace,monospace">${r.absorbance.toFixed(3)}</text>`;
+    }).join('');
+
+    const labels = rows.map((r, i) => {
+      const cx = L + slot * (i + 0.5);
+      return `<text x="${cx.toFixed(1)}" y="${H-B+20}" text-anchor="middle" font-size="12"
+        fill="#1c2534" font-family="system-ui,sans-serif">${r.name || ''}</text>
+        <text x="${cx.toFixed(1)}" y="${H-B+35}" text-anchor="middle" font-size="10.5"
+        fill="#8a8f99" font-family="ui-monospace,monospace">${r.nm.toFixed(0)} nm</text>`;
+    }).join('');
+
+    $('chart').innerHTML = `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto">
+      ${grid}${bars}
+      <line x1="${L}" y1="${zero.toFixed(1)}" x2="${W-R}" y2="${zero.toFixed(1)}" stroke="#1c2534"/>
+      <line x1="${L}" y1="${T}" x2="${L}" y2="${H-B}" stroke="#1c2534"/>
+      ${labels}
+      <text x="18" y="${(T+(H-T-B)/2).toFixed(1)}" text-anchor="middle" font-size="11" fill="#8a8f99"
+       font-family="ui-monospace,monospace" transform="rotate(-90 18 ${(T+(H-T-B)/2).toFixed(1)})">absorbance</text>
+      </svg>
+      <div class="caveat">Each bar drives one LED die alone, so it is a single-peaked
+      measurement at that wavelength (roughly 20\u201335 nm wide). These are three discrete
+      points, not a spectrum \u2014 nothing is measured between them, and a compound
+      absorbing only between two dies will read low on all three.</div>`;
+  }
+
+  $('tableWrap').innerHTML = `<table>
+    <thead><tr><th>Channel</th><th>nm</th><th>A</th><th>Dark</th><th>Blank</th>
+      <th>Sample</th><th>Flag</th></tr></thead>
+    <tbody>${rows.map(r => `<tr>
+      <td><span class="swatch" style="background:rgb(${r.r},${r.g},${r.b})"></span>${r.name || r.step}</td>
+      <td>${r.nm.toFixed(0)}</td>
+      <td>${r.absorbance === null ? '\u2014' : r.absorbance.toFixed(4)}</td>
+      <td>${r.dark_visible === null ? '' : r.dark_visible}</td>
+      <td>${r.blank_visible === null ? '' : r.blank_visible}</td>
+      <td>${r.visible}</td><td style="text-align:left;color:#a8433a">${r.flag || ''}</td>
+    </tr>`).join('')}</tbody></table>`;
+}
+
+(async () => {
+  if (OFFLINE) {
+    setStatus($('status'), 'Opened from disk (file://). Close this tab and run Fidelity1.bat instead.', 'bad');
+    $('connect').disabled = true;
+    return;
+  }
+  await loadPorts();
+  try { applyState(await api('/api/state')); } catch (e) { setStatus($('status'), e.message, 'bad'); }
+  loadScans();
+})();
+</script>
+</body>
+</html>
